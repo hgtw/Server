@@ -898,7 +898,7 @@ void Client::CompleteConnect()
 		guild_mgr.RequestOnlineGuildMembers(this->CharacterID(), this->GuildID());
 	}
 
-	UpdateExpeditionInfoAndLockouts();
+	SendDynamicZoneUpdates();
 
 	/** Request adventure info **/
 	auto pack = new ServerPacket(ServerOP_AdventureDataRequest, 64);
