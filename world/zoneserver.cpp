@@ -1374,7 +1374,6 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		break;
 	}
 	case ServerOP_ExpeditionCreate:
-	case ServerOP_ExpeditionMemberStatus:
 	case ServerOP_ExpeditionDzAddPlayer:
 	case ServerOP_ExpeditionDzMakeLeader:
 	case ServerOP_ExpeditionCharacterLockout:
@@ -1392,6 +1391,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 	case ServerOP_DzSetCompass:
 	case ServerOP_DzSetSafeReturn:
 	case ServerOP_DzSetZoneIn:
+	case ServerOP_DzUpdateMemberStatus:
 	{
 		DynamicZone::HandleZoneMessage(pack);
 		break;
