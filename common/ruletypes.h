@@ -752,6 +752,13 @@ RULE_INT(DynamicZone, EmptyShutdownDelaySeconds, 1500, "Seconds to set dynamic z
 RULE_INT(DynamicZone, WorldProcessRate, 6000, "Timer interval (milliseconds) that systems check their dynamic zone states")
 RULE_CATEGORY_END()
 
+RULE_CATEGORY(Tutorial)
+RULE_BOOL(Tutorial, EnableInstance, true, "If enabled new charaacters that choose tutorial enter the tutorial dynamic zone instance first")
+RULE_INT(Tutorial, InstanceZoneID, 188, "Zone ID used for tutorial instance (default: tutoriala)")
+RULE_INT(Tutorial, InstanceZoneVersion, 0, "Zone Version used for tutorial instance (default: 0)")
+RULE_INT(Tutorial, InstanceDurationSeconds, 21600, "Duration (s) for tutorial dz instance (default: 6 hours)")
+RULE_CATEGORY_END()
+
 #undef RULE_CATEGORY
 #undef RULE_INT
 #undef RULE_REAL

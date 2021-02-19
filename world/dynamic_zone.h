@@ -19,6 +19,8 @@ class DynamicZone : public DynamicZoneBase
 public:
 	using DynamicZoneBase::DynamicZoneBase; // inherit base constructors
 
+	static std::unique_ptr<DynamicZone> CreateNew(uint32_t zone_id, uint32_t zone_version,
+		uint32_t duration_seconds, DynamicZoneType type);
 	static DynamicZone* FindDynamicZoneByID(uint32_t dz_id);
 	static void HandleZoneMessage(ServerPacket* pack);
 

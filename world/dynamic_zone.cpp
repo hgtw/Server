@@ -14,6 +14,19 @@ Database& DynamicZone::GetDatabase()
 	return database;
 }
 
+std::unique_ptr<DynamicZone> DynamicZone::CreateNew(uint32_t zone_id,
+	uint32_t zone_version, uint32_t duration_seconds, DynamicZoneType type)
+{
+	auto new_dz = std::make_unique<DynamicZone>();
+	new_dz->m_zone_id = zone_id;
+	new_dz->m_zone_version = zone_version;
+	new_dz->m_duration = std::chrono::seconds(duration_seconds);
+	new_dz->m_type = type;
+	new_dz->Create();
+
+	return new_dz;
+}
+
 DynamicZone* DynamicZone::FindDynamicZoneByID(uint32_t dz_id)
 {
 	auto expedition = expedition_state.GetExpeditionByDynamicZoneID(dz_id);

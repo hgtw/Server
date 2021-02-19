@@ -1358,6 +1358,18 @@ bool Database::MoveCharacterToZone(const char *charname, uint32 zone_id)
 	return results.RowsAffected() != 0;
 }
 
+bool Database::MoveCharacterToZoneInstance(uint32 character_id, uint32 zone_id, uint16 instance_id)
+{
+	auto results = QueryDatabase(fmt::format(
+		"UPDATE `character_data` SET `zone_id` = {}, `zone_instance` = {}",
+		zone_id,
+		instance_id,
+		character_id
+	));
+
+	return (results.Success() && results.RowsAffected() != 0);
+}
+
 bool Database::SetHackerFlag(const char* accountname, const char* charactername, const char* hacked) {
 	std::string query = StringFormat("INSERT INTO `hackers` (account, name, hacked) values('%s','%s','%s')", accountname, charactername, hacked);
 	auto results = QueryDatabase(query);

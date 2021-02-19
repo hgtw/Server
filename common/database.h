@@ -106,6 +106,7 @@ public:
 	bool DeleteCharacter(char *character_name);
 	bool MoveCharacterToZone(const char *charname, uint32 zone_id);
 	bool MoveCharacterToZone(uint32 character_id, uint32 zone_id);
+	bool MoveCharacterToZoneInstance(uint32 character_id, uint32 zone_id, uint16 instance_id);
 	bool ReserveName(uint32 account_id, char *name);
 	bool SaveCharacterCreate(uint32 character_id, uint32 account_id, PlayerProfile_Struct *pp);
 	bool SetHackerFlag(const char *accountname, const char *charactername, const char *hacked);

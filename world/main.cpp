@@ -88,6 +88,7 @@ union semun {
 #include "queryserv.h"
 #include "web_interface.h"
 #include "console.h"
+#include "dynamic_zone.h"
 #include "expedition_database.h"
 #include "expedition_state.h"
 
@@ -118,6 +119,7 @@ const WorldConfig *Config;
 EQEmuLogSys LogSys;
 WorldContentService content_service;
 WebInterfaceList web_interface;
+std::vector<std::unique_ptr<DynamicZone>> g_tutorial_dzs;
 
 void CatchSignal(int sig_num);
 void CheckForServerScript(bool force_download = false);
@@ -631,6 +633,34 @@ int main(int argc, char** argv) {
 		LFPGroupList.Process();
 		adventure_manager.Process();
 		expedition_state.Process();
+
+		for (auto it = g_tutorial_dzs.begin(); it != g_tutorial_dzs.end();)
+		{
+			auto dz = it->get();
+			bool is_deleted = false;
+
+			auto status = dz->Process();
+			if (status == DynamicZoneStatus::Expired)
+			{
+				LogDynamicZones("Tutorial [{}] expired, moving members out", dz->GetID());
+				// force member out now (should harden this by iterating zone clients, via zone message?)
+				auto dz_zoneserver = zoneserver_list.FindByInstanceID(dz->GetInstanceID());
+				if (dz_zoneserver)
+				{
+					//dz_zoneserver->NumPlayers
+				}
+				for (const auto& member : dz->GetMembers())
+				{
+					database.MoveCharacterToBind(member.id); // they should be bound in non-instance tutorial
+				}
+			}
+			else if (status == DynamicZoneStatus::ExpiredEmpty)
+			{
+				is_deleted = true;
+			}
+
+			it = is_deleted ? g_tutorial_dzs.erase(it) : it + 1;
+		}
 
 		if (InterserverTimer.Check()) {
 			InterserverTimer.Start();

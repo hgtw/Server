@@ -37,6 +37,7 @@
 #include "../common/shareddb.h"
 
 #include "client.h"
+#include "dynamic_zone.h"
 #include "worlddb.h"
 #include "world_config.h"
 #include "login_server.h"
@@ -86,6 +87,7 @@ extern EQ::Random emu_random;
 extern uint32 numclients;
 extern volatile bool RunLoops;
 extern volatile bool UCSServerAvailable_;
+extern std::vector<std::unique_ptr<DynamicZone>> g_tutorial_dzs;
 
 // unused ATM, but here for reference, should match RoF2
 enum class NameApprovalResponse : int {
@@ -813,8 +815,25 @@ bool Client::HandleEnterWorldPacket(const EQApplicationPacket *app) {
 			}
 
 			if (tutorial_enabled) {
-				zone_id = RuleI(World, TutorialZoneID);
-				database.MoveCharacterToZone(charid, zone_id);
+				if (!RuleB(Tutorial, EnableInstance))
+				{
+					zone_id = RuleI(World, TutorialZoneID);
+					database.MoveCharacterToZone(charid, zone_id);
+				}
+				else
+				{
+					/*zone_id = RuleI(Tutorial, InstanceZoneID);
+					int zone_version = RuleI(Tutorial, InstanceZoneVersion);
+					int duration = RuleI(Tutorial, InstanceDurationSeconds);
+
+					auto dz = DynamicZone::CreateNew(zone_id, zone_version, duration, DynamicZoneType::Tutorial);
+					dz->AddMember({ GetCharID(), GetCharName(), DynamicZoneMemberStatus::Online });
+
+					instance_id = dz->GetInstanceID();
+					database.MoveCharacterToZoneInstance(GetCharID(), dz->GetZoneID(), dz->GetInstanceID());
+
+					g_tutorial_dzs.emplace_back(std::move(dz));*/
+				}
 			}
 			else {
 				LogInfo("[{}] is trying to go to tutorial but are not allowed", char_name);
@@ -1594,14 +1613,41 @@ bool Client::OPCharCreate(char *name, CharCreate_Struct *cc)
 	pp.binds[4].heading = pp.heading;
 
 	/* Overrides if we have the tutorial flag set! */
+	int bind_zone_id = pp.zone_id;
 	if (cc->tutorial && RuleB(World, EnableTutorialButton)) {
-		pp.zone_id = RuleI(World, TutorialZoneID);
-		content_db.GetSafePoints(ZoneName(pp.zone_id), 0, &pp.x, &pp.y, &pp.z);
+		bind_zone_id = RuleI(World, TutorialZoneID);
+
+		auto version = 0;
+		if (!RuleB(Tutorial, EnableInstance))
+		{
+			pp.zone_id = RuleI(World, TutorialZoneID);
+		}
+		else
+		{
+			pp.zone_id = RuleI(Tutorial, InstanceZoneID);
+			version = RuleI(Tutorial, InstanceZoneVersion);
+			int duration = RuleI(Tutorial, InstanceDurationSeconds);
+
+			// alternatively we set a tutorial dz id/tutorial instance flag, or even a pointer ot the dz object on client
+			// then in EnterWorld it can look up the id to add the character to the dz
+			auto character_id = database.GetCharacterID(pp.name);
+
+			auto dz = DynamicZone::CreateNew(pp.zone_id, version, duration, DynamicZoneType::Tutorial);
+			dz->AddMember({ character_id, GetCharName(), DynamicZoneMemberStatus::InDynamicZone });
+			// should we notify zone of this dz for zone cache or just run it completely in world
+			// only the tutorial zone server itself will need it if so
+
+			//instance_id = dz->GetInstanceID();
+			pp.zoneInstance = dz->GetInstanceID();
+
+			g_tutorial_dzs.emplace_back(std::move(dz));
+		}
+		content_db.GetSafePoints(ZoneName(pp.zone_id), version, &pp.x, &pp.y, &pp.z);
 	}
 
 	/*  Will either be the same as home or tutorial if enabled. */
 	if(RuleB(World, StartZoneSameAsBindOnCreation))	{
-		pp.binds[0].zone_id = pp.zone_id;
+		pp.binds[0].zone_id = bind_zone_id;
 		pp.binds[0].x = pp.x;
 		pp.binds[0].y = pp.y;
 		pp.binds[0].z = pp.z;
