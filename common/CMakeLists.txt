@@ -154,6 +154,7 @@ SET(repositories
 	repositories/base/base_character_disciplines_repository.h
 	repositories/base/base_character_expedition_lockouts_repository.h
 	repositories/base/base_character_inspect_messages_repository.h
+	repositories/base/base_character_instance_safereturns_repository.h
 	repositories/base/base_character_item_recast_repository.h
 	repositories/base/base_character_languages_repository.h
 	repositories/base/base_character_leadership_abilities_repository.h
@@ -318,6 +319,7 @@ SET(repositories
 	repositories/character_disciplines_repository.h
 	repositories/character_expedition_lockouts_repository.h
 	repositories/character_inspect_messages_repository.h
+	repositories/character_instance_safereturns_repository.h
 	repositories/character_item_recast_repository.h
 	repositories/character_languages_repository.h
 	repositories/character_leadership_abilities_repository.h
