@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "world_store.h"
 #include "dynamic_zone.h"
 #include "expedition_message.h"
+#include "shared_task_world_messaging.h"
 
 extern ClientList client_list;
 extern GroupLFPList LFPGroupList;
@@ -1289,11 +1290,11 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 	case ServerOP_CZTaskDisablePlayer:
 	case ServerOP_CZTaskDisableGroup:
 	case ServerOP_CZTaskDisableRaid:
-	case ServerOP_CZTaskDisableGuild:	
+	case ServerOP_CZTaskDisableGuild:
 	case ServerOP_CZTaskEnablePlayer:
 	case ServerOP_CZTaskEnableGroup:
 	case ServerOP_CZTaskEnableRaid:
-	case ServerOP_CZTaskEnableGuild:	
+	case ServerOP_CZTaskEnableGuild:
 	case ServerOP_CZTaskFailPlayer:
 	case ServerOP_CZTaskFailGroup:
 	case ServerOP_CZTaskFailRaid:
@@ -1372,6 +1373,20 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		zoneserver_list.SendPacket(pack);
 		break;
 	}
+	case ServerOP_SharedTaskRequest:
+	case ServerOP_SharedTaskGrant:
+	case ServerOP_SharedTaskReject:
+	case ServerOP_SharedTaskAddPlayer:
+	case ServerOP_SharedTaskRemovePlayer:
+	case ServerOP_SharedTaskZoneCreated:
+	case ServerOP_SharedTaskZoneFailed:
+	case ServerOP_SharedTaskActivityUpdate:
+	case ServerOP_SharedTaskCompleted:
+	{
+		SharedTaskWorldMessaging::HandleZoneMessage(pack);
+		break;
+	}
+
 	case ServerOP_ExpeditionCreate:
 	case ServerOP_ExpeditionGetMemberStatuses:
 	case ServerOP_ExpeditionMemberChange:
