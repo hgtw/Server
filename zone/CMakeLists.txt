@@ -126,6 +126,7 @@ SET(zone_sources
 	quest_parser_collection.cpp
 	raids.cpp
 	raycast_mesh.cpp
+	shared_task_zone_messaging.cpp
 	spawn2.cpp
 	spawn2.h
 	spawngroup.cpp
@@ -249,6 +250,7 @@ SET(zone_headers
 	raids.h
 	raycast_mesh.h
 	skills.h
+	shared_task_zone_messaging.h
 	spawn2.cpp
 	spawn2.h
 	spawngroup.h
