@@ -46,6 +46,7 @@
 #include "../common/crash.h"
 #include "client.h"
 #include "worlddb.h"
+
 #ifdef _WINDOWS
 #include <process.h>
 #define snprintf	_snprintf
@@ -53,12 +54,14 @@
 #define strcasecmp	_stricmp
 #include <conio.h>
 #else
+
 #include <pthread.h>
 #include "../common/unix.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
+
 #if not defined (FREEBSD) && not defined (DARWIN)
 union semun {
 	int val;
@@ -99,30 +102,31 @@ union semun {
 #include "world_store.h"
 #include "world_event_scheduler.h"
 
-WorldStore world_store;
-ClientList client_list;
-GroupLFPList LFPGroupList;
-ZSList zoneserver_list;
-LoginServerList loginserverlist;
-UCSConnection UCSLink;
+WorldStore          world_store;
+ClientList          client_list;
+GroupLFPList        LFPGroupList;
+ZSList              zoneserver_list;
+LoginServerList     loginserverlist;
+UCSConnection       UCSLink;
 QueryServConnection QSLink;
-LauncherList launcher_list;
-AdventureManager adventure_manager;
+LauncherList        launcher_list;
+AdventureManager    adventure_manager;
 WorldEventScheduler event_scheduler;
-EQ::Random emu_random;
-volatile bool RunLoops = true;
-uint32 numclients = 0;
-uint32 numzones = 0;
-bool holdzones = false;
-const WorldConfig *Config;
-EQEmuLogSys LogSys;
+EQ::Random          emu_random;
+volatile bool       RunLoops   = true;
+uint32              numclients = 0;
+uint32              numzones   = 0;
+bool                holdzones  = false;
+const WorldConfig   *Config;
+EQEmuLogSys         LogSys;
 WorldContentService content_service;
-WebInterfaceList web_interface;
+WebInterfaceList    web_interface;
 
 void CatchSignal(int sig_num);
 void CheckForServerScript(bool force_download = false);
 
-inline void UpdateWindowTitle(std::string new_title) {
+inline void UpdateWindowTitle(std::string new_title)
+{
 #ifdef _WINDOWS
 	SetConsoleTitle(new_title.c_str());
 #endif
@@ -154,7 +158,7 @@ void LoadDatabaseConnections()
 	 */
 	if (!Config->ContentDbHost.empty()) {
 		if (!content_db.Connect(
-			Config->ContentDbHost.c_str() ,
+			Config->ContentDbHost.c_str(),
 			Config->ContentDbUsername.c_str(),
 			Config->ContentDbPassword.c_str(),
 			Config->ContentDbName.c_str(),
@@ -164,7 +168,8 @@ void LoadDatabaseConnections()
 			LogError("Cannot continue without a content database connection");
 			std::exit(1);
 		}
-	} else {
+	}
+	else {
 		content_db.SetMysql(database.getMySQL());
 	}
 
@@ -174,7 +179,7 @@ void CheckForXMLConfigUpgrade()
 {
 	if (!std::ifstream("eqemu_config.json") && std::ifstream("eqemu_config.xml")) {
 		CheckForServerScript(true);
-		if(system("perl eqemu_server.pl convert_xml"));
+		if (system("perl eqemu_server.pl convert_xml")) {}
 	}
 	else {
 		CheckForServerScript();
@@ -205,7 +210,7 @@ void RegisterLoginservers()
 		}
 	}
 	else {
-		LinkedList<LoginConfig *> loginlist = Config->loginlist;
+		LinkedList<LoginConfig *>         loginlist = Config->loginlist;
 		LinkedListIterator<LoginConfig *> iterator(loginlist);
 		iterator.Reset();
 		while (iterator.MoreElements()) {
@@ -229,6 +234,48 @@ void RegisterLoginservers()
 	}
 }
 
+static void GMSayHookCallBackProcess(uint16 log_category, std::string message)
+{
+	/**
+	 * Cut messages down to 4000 max to prevent client crash
+	 */
+	if (!message.empty()) {
+		message = message.substr(0, 4000);
+	}
+
+	/**
+	 * Replace Occurrences of % or MessageStatus will crash
+	 */
+	find_replace(message, std::string("%"), std::string("."));
+
+	if (message.find('\n') != std::string::npos) {
+		auto message_split = SplitString(message, '\n');
+
+		for (size_t iter = 0; iter < message_split.size(); ++iter) {
+			zoneserver_list.SendEmoteMessage(
+				nullptr,
+				0,
+				0,
+				LogSys.GetGMSayColorFromCategory(log_category),
+				" %s%s",
+				(iter == 0 ? " ---" : ""),
+				message_split[iter].c_str()
+			);
+		}
+	}
+	else {
+		zoneserver_list.SendEmoteMessage(
+			nullptr,
+			0,
+			0,
+			LogSys.GetGMSayColorFromCategory(log_category),
+			"%s",
+			message.c_str()
+		);
+	}
+}
+
+
 /**
  * World process entrypoint
  *
@@ -236,7 +283,8 @@ void RegisterLoginservers()
  * @param argv
  * @return
  */
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
 	RegisterExecutablePlatform(ExePlatformWorld);
 	LogSys.LoadLogSettingsDefaults();
 	set_exception_handler();
@@ -301,6 +349,7 @@ int main(int argc, char** argv) {
 	 * Logging
 	 */
 	database.LoadLogSettings(LogSys.log_settings);
+	LogSys.SetGMSayHandler(&GMSayHookCallBackProcess);
 	LogSys.StartFileLogs();
 
 	/**
@@ -403,7 +452,7 @@ int main(int argc, char** argv) {
 
 	LogInfo("Loading EQ time of day");
 	TimeOfDay_Struct eqTime;
-	time_t realtime;
+	time_t           realtime;
 	eqTime = database.LoadTime(realtime);
 	zoneserver_list.worldclock.SetCurrentEQTimeOfDay(eqTime, realtime);
 	Timer EQTimeTimer(600000);
@@ -415,13 +464,11 @@ int main(int argc, char** argv) {
 	LogInfo("Deleted [{}] stale player corpses from database", database.DeleteStalePlayerCorpses());
 
 	LogInfo("Loading adventures");
-	if (!adventure_manager.LoadAdventureTemplates())
-	{
+	if (!adventure_manager.LoadAdventureTemplates()) {
 		LogInfo("Unable to load adventure templates");
 	}
 
-	if (!adventure_manager.LoadAdventureEntries())
-	{
+	if (!adventure_manager.LoadAdventureEntries()) {
 		LogInfo("Unable to load adventure templates");
 	}
 
@@ -458,8 +505,8 @@ int main(int argc, char** argv) {
 	server_connection = std::make_unique<EQ::Net::ServertalkServer>();
 
 	EQ::Net::ServertalkServerOptions server_opts;
-	server_opts.port = Config->WorldTCPPort;
-	server_opts.ipv6 = false;
+	server_opts.port        = Config->WorldTCPPort;
+	server_opts.ipv6        = false;
 	server_opts.credentials = Config->SharedKey;
 	server_connection->Listen(server_opts);
 	LogInfo("Server (TCP) listener started");
@@ -474,50 +521,62 @@ int main(int argc, char** argv) {
 		}
 	);
 
-	server_connection->OnConnectionRemoved("Zone", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
-		LogInfo("Removed Zone Server connection from [{0}]",
-			connection->GetUUID());
+	server_connection->OnConnectionRemoved(
+		"Zone", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
+			LogInfo("Removed Zone Server connection from [{0}]",
+					connection->GetUUID());
 
-		numzones--;
-		zoneserver_list.Remove(connection->GetUUID());
-	});
+			numzones--;
+			zoneserver_list.Remove(connection->GetUUID());
+		}
+	);
 
-	server_connection->OnConnectionIdentified("Launcher", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
-		LogInfo("New Launcher connection from [{2}] at [{0}:{1}]",
-			connection->Handle()->RemoteIP(), connection->Handle()->RemotePort(), connection->GetUUID());
+	server_connection->OnConnectionIdentified(
+		"Launcher", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
+			LogInfo("New Launcher connection from [{2}] at [{0}:{1}]",
+					connection->Handle()->RemoteIP(), connection->Handle()->RemotePort(), connection->GetUUID());
 
-		launcher_list.Add(connection);
-	});
+			launcher_list.Add(connection);
+		}
+	);
 
-	server_connection->OnConnectionRemoved("Launcher", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
-		LogInfo("Removed Launcher connection from [{0}]",
-			connection->GetUUID());
+	server_connection->OnConnectionRemoved(
+		"Launcher", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
+			LogInfo("Removed Launcher connection from [{0}]",
+					connection->GetUUID());
 
-		launcher_list.Remove(connection);
-	});
+			launcher_list.Remove(connection);
+		}
+	);
 
-	server_connection->OnConnectionIdentified("QueryServ", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
-		LogInfo("New Query Server connection from [{2}] at [{0}:{1}]",
-			connection->Handle()->RemoteIP(), connection->Handle()->RemotePort(), connection->GetUUID());
+	server_connection->OnConnectionIdentified(
+		"QueryServ", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
+			LogInfo("New Query Server connection from [{2}] at [{0}:{1}]",
+					connection->Handle()->RemoteIP(), connection->Handle()->RemotePort(), connection->GetUUID());
 
-		QSLink.AddConnection(connection);
-	});
+			QSLink.AddConnection(connection);
+		}
+	);
 
-	server_connection->OnConnectionRemoved("QueryServ", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
-		LogInfo("Removed Query Server connection from [{0}]",
-			connection->GetUUID());
+	server_connection->OnConnectionRemoved(
+		"QueryServ", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
+			LogInfo("Removed Query Server connection from [{0}]",
+					connection->GetUUID());
 
-		QSLink.RemoveConnection(connection);
-	});
+			QSLink.RemoveConnection(connection);
+		}
+	);
 
-	server_connection->OnConnectionIdentified("UCS", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
-		LogInfo("New UCS Server connection from [{2}] at [{0}:{1}]",
-			connection->Handle()->RemoteIP(), connection->Handle()->RemotePort(), connection->GetUUID());
+	server_connection->OnConnectionIdentified(
+		"UCS", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
+			LogInfo("New UCS Server connection from [{2}] at [{0}:{1}]",
+					connection->Handle()->RemoteIP(), connection->Handle()->RemotePort(), connection->GetUUID());
 
-		UCSLink.SetConnection(connection);
+			UCSLink.SetConnection(connection);
 
-		zoneserver_list.UpdateUCSServerAvailable();
-	});
+			zoneserver_list.UpdateUCSServerAvailable();
+		}
+	);
 
 	server_connection->OnConnectionRemoved(
 		"UCS", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
@@ -533,26 +592,30 @@ int main(int argc, char** argv) {
 		}
 	);
 
-	server_connection->OnConnectionIdentified("WebInterface", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
-		LogInfo("New WebInterface Server connection from [{2}] at [{0}:{1}]",
-			connection->Handle()->RemoteIP(), connection->Handle()->RemotePort(), connection->GetUUID());
+	server_connection->OnConnectionIdentified(
+		"WebInterface", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
+			LogInfo("New WebInterface Server connection from [{2}] at [{0}:{1}]",
+					connection->Handle()->RemoteIP(), connection->Handle()->RemotePort(), connection->GetUUID());
 
-		web_interface.AddConnection(connection);
-	});
+			web_interface.AddConnection(connection);
+		}
+	);
 
-	server_connection->OnConnectionRemoved("WebInterface", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
-		LogInfo("Removed WebInterface Server connection from [{0}]",
-			connection->GetUUID());
+	server_connection->OnConnectionRemoved(
+		"WebInterface", [](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
+			LogInfo("Removed WebInterface Server connection from [{0}]",
+					connection->GetUUID());
 
-		web_interface.RemoveConnection(connection);
-	});
+			web_interface.RemoveConnection(connection);
+		}
+	);
 
 	EQStreamManagerInterfaceOptions opts(9000, false, false);
-	opts.daybreak_options.resend_delay_ms = RuleI(Network, ResendDelayBaseMS);
+	opts.daybreak_options.resend_delay_ms     = RuleI(Network, ResendDelayBaseMS);
 	opts.daybreak_options.resend_delay_factor = RuleR(Network, ResendDelayFactor);
-	opts.daybreak_options.resend_delay_min = RuleI(Network, ResendDelayMinMS);
-	opts.daybreak_options.resend_delay_max = RuleI(Network, ResendDelayMaxMS);
-	opts.daybreak_options.outgoing_data_rate = RuleR(Network, ClientDataRate);
+	opts.daybreak_options.resend_delay_min    = RuleI(Network, ResendDelayMinMS);
+	opts.daybreak_options.resend_delay_max    = RuleI(Network, ResendDelayMaxMS);
+	opts.daybreak_options.outgoing_data_rate  = RuleR(Network, ClientDataRate);
 
 	EQ::Net::EQStreamManager eqsm(opts);
 
@@ -565,14 +628,16 @@ int main(int argc, char** argv) {
 	zoneserver_list.reminder->Disable();
 	Timer InterserverTimer(INTERSERVER_TIMER); // does MySQL pings and auto-reconnect
 	InterserverTimer.Trigger();
-	uint8 ReconnectCounter = 100;
+	uint8                              ReconnectCounter = 100;
 	std::shared_ptr<EQStreamInterface> eqs;
-	EQStreamInterface *eqsi;
+	EQStreamInterface                  *eqsi;
 
-	eqsm.OnNewConnection([&stream_identifier](std::shared_ptr<EQ::Net::EQStream> stream) {
-		stream_identifier.AddStream(stream);
-		LogInfo("New connection from IP {0}:{1}", stream->GetRemoteIP(), ntohs(stream->GetRemotePort()));
-	});
+	eqsm.OnNewConnection(
+		[&stream_identifier](std::shared_ptr<EQ::Net::EQStream> stream) {
+			stream_identifier.AddStream(stream);
+			LogInfo("New connection from IP {0}:{1}", stream->GetRemoteIP(), ntohs(stream->GetRemotePort()));
+		}
+	);
 
 	while (RunLoops) {
 		Timer::SetCurrentTime();
@@ -584,7 +649,7 @@ int main(int argc, char** argv) {
 		//check the stream identifier for any now-identified streams
 		while ((eqsi = stream_identifier.PopIdentified())) {
 			//now that we know what patch they are running, start up their client object
-			struct in_addr	in{};
+			struct in_addr in{};
 			in.s_addr = eqsi->GetRemoteIP();
 			if (RuleB(World, UseBannedIPsTable)) { //Lieka: Check to see if we have the responsibility for blocking IPs.
 				LogInfo("Checking inbound connection [{}] against BannedIPs table", inet_ntoa(in));
@@ -600,7 +665,9 @@ int main(int argc, char** argv) {
 				}
 			}
 			if (!RuleB(World, UseBannedIPsTable)) {
-				LogInfo("New connection from [{}]:[{}], processing connection", inet_ntoa(in), ntohs(eqsi->GetRemotePort()));
+				LogInfo("New connection from [{}]:[{}], processing connection",
+						inet_ntoa(in),
+						ntohs(eqsi->GetRemotePort()));
 				auto client = new Client(eqsi);
 				// @merth: client->zoneattempt=0;
 				client_list.Add(client);
@@ -637,7 +704,10 @@ int main(int argc, char** argv) {
 			database.ping();
 			content_db.ping();
 
-			std::string window_title = StringFormat("World: %s Clients: %i", Config->LongName.c_str(), client_list.GetClientCount());
+			std::string window_title = StringFormat(
+				"World: %s Clients: %i",
+				Config->LongName.c_str(),
+				client_list.GetClientCount());
 			UpdateWindowTitle(window_title);
 		}
 
@@ -654,12 +724,14 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-void CatchSignal(int sig_num) {
+void CatchSignal(int sig_num)
+{
 	LogInfo("Caught signal [{}]", sig_num);
 	RunLoops = false;
 }
 
-void UpdateWindowTitle(char* iNewTitle) {
+void UpdateWindowTitle(char *iNewTitle)
+{
 #ifdef _WINDOWS
 	char tmp[500];
 	if (iNewTitle) {
@@ -672,18 +744,23 @@ void UpdateWindowTitle(char* iNewTitle) {
 #endif
 }
 
-void CheckForServerScript(bool force_download) {
+void CheckForServerScript(bool force_download)
+{
 	/* Fetch EQEmu Server script */
 	if (!std::ifstream("eqemu_server.pl") || force_download) {
 
-		if(force_download)
-			std::remove("eqemu_server.pl"); /* Delete local before fetch */
+		if (force_download) {
+			std::remove("eqemu_server.pl");
+		} /* Delete local before fetch */
 
 		std::cout << "Pulling down EQEmu Server Maintenance Script (eqemu_server.pl)..." << std::endl;
 #ifdef _WIN32
 		if(system("perl -MLWP::UserAgent -e \"require LWP::UserAgent;  my $ua = LWP::UserAgent->new; $ua->timeout(10); $ua->env_proxy; my $response = $ua->get('https://raw.githubusercontent.com/EQEmu/Server/master/utils/scripts/eqemu_server.pl'); if ($response->is_success){ open(FILE, '> eqemu_server.pl'); print FILE $response->decoded_content; close(FILE); }\""));
 #else
-		if(system("wget -N --no-check-certificate --quiet -O eqemu_server.pl https://raw.githubusercontent.com/EQEmu/Server/master/utils/scripts/eqemu_server.pl"));
+		if (system(
+			"wget -N --no-check-certificate --quiet -O eqemu_server.pl https://raw.githubusercontent.com/EQEmu/Server/master/utils/scripts/eqemu_server.pl"
+		));
 #endif
 	}
 }
+
