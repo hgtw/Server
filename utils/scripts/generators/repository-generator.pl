@@ -282,6 +282,10 @@ foreach my $table_to_generate (@tables) {
             $all_entries      .= sprintf("\t\t\tentry.%-${longest_column_length}s = atoi(row[%s]);\n", $column_name, $index);
             $find_one_entries .= sprintf("\t\t\tentry.%-${longest_column_length}s = atoi(row[%s]);\n", $column_name, $index);
         }
+        elsif ($data_type =~ /bigint/) {
+            $all_entries      .= sprintf("\t\t\tentry.%-${longest_column_length}s = strtoll(row[%s], NULL, 10);\n", $column_name, $index);
+            $find_one_entries .= sprintf("\t\t\tentry.%-${longest_column_length}s = strtoll(row[%s], NULL, 10);\n", $column_name, $index);
+        }
         elsif ($data_type =~ /float|double|decimal/) {
             $all_entries      .= sprintf("\t\t\tentry.%-${longest_column_length}s = static_cast<float>(atof(row[%s]));\n", $column_name, $index);
             $find_one_entries .= sprintf("\t\t\tentry.%-${longest_column_length}s = static_cast<float>(atof(row[%s]));\n", $column_name, $index);
@@ -468,8 +472,7 @@ sub translate_mysql_data_type_to_c {
         $struct_data_type = 'int';
     }
     elsif ($mysql_data_type =~ /bigint/) {
-        $struct_data_type = 'int';
-        # Use regular int for now until we have 64 support
+        $struct_data_type = 'int64';
     }
     elsif ($mysql_data_type =~ /int/) {
         $struct_data_type = 'int';
