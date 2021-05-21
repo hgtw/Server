@@ -278,13 +278,13 @@ foreach my $table_to_generate (@tables) {
         $insert_many_entries .= sprintf("\t\t\tinsert_values.push_back(%s);\n", $value);
 
         # find one / all (select)
-        if ($data_type =~ /int/) {
-            $all_entries      .= sprintf("\t\t\tentry.%-${longest_column_length}s = atoi(row[%s]);\n", $column_name, $index);
-            $find_one_entries .= sprintf("\t\t\tentry.%-${longest_column_length}s = atoi(row[%s]);\n", $column_name, $index);
-        }
-        elsif ($data_type =~ /bigint/) {
+        if ($data_type =~ /bigint/) {
             $all_entries      .= sprintf("\t\t\tentry.%-${longest_column_length}s = strtoll(row[%s], NULL, 10);\n", $column_name, $index);
             $find_one_entries .= sprintf("\t\t\tentry.%-${longest_column_length}s = strtoll(row[%s], NULL, 10);\n", $column_name, $index);
+        }
+        elsif ($data_type =~ /int/) {
+            $all_entries      .= sprintf("\t\t\tentry.%-${longest_column_length}s = atoi(row[%s]);\n", $column_name, $index);
+            $find_one_entries .= sprintf("\t\t\tentry.%-${longest_column_length}s = atoi(row[%s]);\n", $column_name, $index);
         }
         elsif ($data_type =~ /float|double|decimal/) {
             $all_entries      .= sprintf("\t\t\tentry.%-${longest_column_length}s = static_cast<float>(atof(row[%s]));\n", $column_name, $index);
