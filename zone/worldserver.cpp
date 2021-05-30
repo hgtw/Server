@@ -3016,6 +3016,8 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		Expedition::HandleWorldMessage(pack);
 		break;
 	}
+	case ServerOP_DzCreated:
+	case ServerOP_DzDeleted:
 	case ServerOP_DzAddRemoveMember:
 	case ServerOP_DzSwapMembers:
 	case ServerOP_DzRemoveAllMembers:

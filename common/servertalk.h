@@ -6,7 +6,10 @@
 #include "../common/eq_packet_structs.h"
 #include "../common/net/packet.h"
 #include <cereal/cereal.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/chrono.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
 
 #define SERVER_TIMEOUT	45000	// how often keepalive gets sent
 #define INTERSERVER_TIMER					10000
@@ -165,6 +168,8 @@
 #define ServerOP_DzUpdateMemberStatus         0x0459
 #define ServerOP_DzLeaderChanged              0x045a
 #define ServerOP_DzExpireWarning              0x045b
+#define ServerOP_DzCreated                    0x045c
+#define ServerOP_DzDeleted                    0x045d
 
 #define ServerOP_LSInfo				0x1000
 #define ServerOP_LSStatus			0x1001
@@ -2156,6 +2161,13 @@ struct ServerDzMemberSwap_Struct {
 struct ServerDzSetDuration_Struct {
 	uint32 dz_id;
 	uint32 seconds;
+};
+
+struct ServerDzCreateSerialized_Struct {
+	uint16_t origin_zone_id;
+	uint16_t origin_instance_id;
+	uint32_t cereal_size;
+	char     cereal_data[0];
 };
 
 #pragma pack()

@@ -88,6 +88,7 @@ union semun {
 #include "queryserv.h"
 #include "web_interface.h"
 #include "console.h"
+#include "dynamic_zone_manager.h"
 #include "expedition_database.h"
 #include "expedition_state.h"
 
@@ -427,6 +428,9 @@ int main(int argc, char** argv) {
 
 	adventure_manager.LoadLeaderboardInfo();
 
+	LogInfo("Purging expired dynamic zones and members");
+	dynamic_zone_manager.PurgeExpiredDynamicZones();
+
 	LogInfo("Purging expired expeditions");
 	ExpeditionDatabase::PurgeExpiredExpeditions();
 	ExpeditionDatabase::PurgeExpiredCharacterLockouts();
@@ -436,6 +440,9 @@ int main(int argc, char** argv) {
 
 	Timer PurgeInstanceTimer(450000);
 	PurgeInstanceTimer.Start(450000);
+
+	LogInfo("Loading dynamic zones");
+	dynamic_zone_manager.CacheAllFromDatabase();
 
 	LogInfo("Loading active expeditions");
 	expedition_state.CacheAllFromDatabase();
@@ -630,7 +637,7 @@ int main(int argc, char** argv) {
 		launcher_list.Process();
 		LFPGroupList.Process();
 		adventure_manager.Process();
-		expedition_state.Process();
+		dynamic_zone_manager.Process();
 
 		if (InterserverTimer.Check()) {
 			InterserverTimer.Start();
