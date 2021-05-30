@@ -1717,6 +1717,14 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	/* Task Packets */
 	LoadClientTaskState();
 
+	auto dynamic_zone_member_entries = DynamicZoneMembersRepository::GetWhere(database,
+		fmt::format("character_id = {} AND is_current_member = TRUE", CharacterID()));
+
+	for (const auto& entry : dynamic_zone_member_entries)
+	{
+		m_dynamic_zone_ids.emplace_back(entry.dynamic_zone_id);
+	}
+
 	m_expedition_id = ExpeditionsRepository::GetIDByMemberID(database, CharacterID());
 
 	/**
