@@ -413,6 +413,11 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_YellForHelp] = &Client::Handle_OP_YellForHelp;
 	ConnectedOpcodes[OP_ZoneChange] = &Client::Handle_OP_ZoneChange;
 	ConnectedOpcodes[OP_ResetAA] = &Client::Handle_OP_ResetAA;
+
+	// shared tasks
+	ConnectedOpcodes[OP_SharedTaskRemovePlayer] = &Client::Handle_OP_SharedTaskRemovePlayer;
+	ConnectedOpcodes[OP_SharedTaskAddPlayer]    = &Client::Handle_OP_SharedTaskAddPlayer;
+	ConnectedOpcodes[OP_SharedTaskMakeLeader]   = &Client::Handle_OP_SharedTaskMakeLeader;
 }
 
 void ClearMappedOpcode(EmuOpcode op)
@@ -4485,7 +4490,7 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 			double cosine = std::cos(thetar);
 			double sine = std::sin(thetar);
 
-			double normalizedx, normalizedy;	
+			double normalizedx, normalizedy;
 			normalizedx = cx * cosine - -cy * sine;
 			normalizedy = -cx * sine + cy * cosine;
 
@@ -15198,4 +15203,19 @@ void Client::Handle_OP_ResetAA(const EQApplicationPacket *app)
 		ResetAA();
 	}
 	return;
+}
+
+void Client::Handle_OP_SharedTaskRemovePlayer(const EQApplicationPacket *app)
+{
+	LogTasks("[Handle_OP_SharedTaskRemovePlayer]");
+}
+
+void Client::Handle_OP_SharedTaskAddPlayer(const EQApplicationPacket *app)
+{
+	LogTasks("[Handle_OP_SharedTaskAddPlayer]");
+}
+
+void Client::Handle_OP_SharedTaskMakeLeader(const EQApplicationPacket *app)
+{
+	LogTasks("[Handle_OP_SharedTaskMakeLeader]");
 }
