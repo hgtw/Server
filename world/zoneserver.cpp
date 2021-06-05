@@ -1379,6 +1379,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 	case ServerOP_SharedTaskUpdate:
 	case ServerOP_SharedTaskRequestMemberlist:
 	case ServerOP_SharedTaskRemovePlayer:
+	case ServerOP_SharedTaskMakeLeader:
 	{
 		SharedTaskWorldMessaging::HandleZoneMessage(pack);
 		break;
