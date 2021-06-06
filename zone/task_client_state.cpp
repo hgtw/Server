@@ -2272,6 +2272,7 @@ void ClientTaskState::AcceptNewTask(
 		// fill
 		r->requested_character_id = client->CharacterID();
 		r->requested_task_id      = task_id;
+		r->requested_npc_type_id  = npc_type_id;
 
 		// send
 		worldserver.SendPacket(pack);
