@@ -29,6 +29,7 @@
 #define ServerOP_SharedTaskMemberlist               0x0306 // world -> zone. Send shared task memberlist
 #define ServerOP_SharedTaskRequestMemberlist        0x0307 // zone -> world. Send shared task memberlist (zone in initial for now, could change)
 #define ServerOP_SharedTaskAcceptNewTask            0x0308 // world -> zone. World verified, continue AcceptNewTask
+#define ServerOP_SharedTaskCreateDynamicZone        0x0309 // zone -> world
 
 // used in
 // ServerOP_SharedTaskRequest
@@ -100,6 +101,13 @@ struct ServerSharedTaskMakeLeader_Struct {
 	uint32 source_character_id;
 	uint32 task_id;
 	char   player_name[64];
+};
+
+struct ServerSharedTaskCreateDynamicZone_Struct {
+	uint32 source_character_id;
+	uint32 task_id;
+	uint32 cereal_size;
+	char   cereal_data[0]; // serialized dz with creation parameters
 };
 
 class SharedTask {

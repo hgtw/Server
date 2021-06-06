@@ -11,6 +11,8 @@
 #include "zoneserver.h"
 #include "shared_task_manager.h"
 #include "../common/repositories/task_activities_repository.h"
+#include "dynamic_zone.h"
+#include "dynamic_zone_manager.h"
 
 extern ClientList        client_list;
 extern ZSList            zoneserver_list;
@@ -190,6 +192,46 @@ void SharedTaskWorldMessaging::HandleZoneMessage(ServerPacket *pack)
 				}
 			}
 
+			break;
+		}
+		case ServerOP_SharedTaskCreateDynamicZone: {
+			auto buf = reinterpret_cast<ServerSharedTaskCreateDynamicZone_Struct*>(pack->pBuffer);
+
+			LogTasksDetail(
+				"[ServerOP_SharedTaskCreateDynamicZone] Received dynamic zone creation request from character [{}] task_id [{}]",
+				buf->source_character_id,
+				buf->task_id
+			);
+
+			auto t = shared_task_manager.FindSharedTaskByTaskIdAndCharacterId(buf->task_id, buf->source_character_id);
+			if (t)
+			{
+				DynamicZone dz;
+				dz.LoadSerializedDzPacket(buf->cereal_data, buf->cereal_size);
+
+				// these aren't strictly necessary since live's window behavior isn't implemented
+				// todo: dz name should be version-based zone name (Thundercrest Isles: The Creator)
+				// todo: dz.SetName(t->GetTaskData().title);
+				// todo: dz.SetMinPlayers(t->GetTaskData().min_players);
+				// todo: dz.SetMaxPlayers(t->GetTaskData().max_players);
+
+				std::vector<DynamicZoneMember> dz_members;
+				for (const auto& member : t->GetMembers())
+				{
+					dz_members.emplace_back(member.character_id, member.character_name);
+					if (member.is_leader)
+					{
+						dz.SetLeader({ member.character_id, member.character_name });
+					}
+				}
+
+				auto new_dz = dynamic_zone_manager.CreateNew(dz, dz_members);
+				if (new_dz)
+				{
+					// todo: shared tasks should store the dz id and notify it when adding/removing members
+					LogTasks("Created task dz id: [{}]", new_dz->GetID());
+				}
+			}
 			break;
 		}
 		default:

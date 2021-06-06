@@ -11,6 +11,7 @@
 #include "zonedb.h"
 #include "../common/shared_tasks.h"
 #include "worldserver.h"
+#include "dynamic_zone.h"
 
 extern WorldServer worldserver;
 extern QueryServ *QServ;
@@ -2471,4 +2472,63 @@ const ClientTaskInformation &ClientTaskState::GetActiveSharedTask() const
 bool ClientTaskState::HasActiveSharedTask()
 {
 	return GetActiveSharedTask().task_id != 0;
+}
+
+void ClientTaskState::CreateTaskDynamicZone(Client* client, int task_id, DynamicZone& dz_request)
+{
+	auto task = task_manager->m_task_data[task_id];
+	if (!task)
+	{
+		return;
+	}
+
+	// todo: need to find more info on live behavior for unlimited duration tasks. based on some posts
+	// unlimited *shared* task instances lasted 24 hours but that may have been before the 2020 window fix.
+	// since live seems to shut instances down if empty for awhile/no one zones in anyway, it's possible
+	// re-acquiring a task/quest if its instance expires is expected behavior and maybe we should just
+	// put a 24 hour cap (could make duration a rule) on unlimited task dzs with that same expectation.
+	// any solo task/quest that requires a dz should have a time limit set anyway, but this would be
+	// a good fallback to prevent players from holding reserved instance ids forever.
+
+	// a task might create a dz from an objective so override dz duration to time remaining
+	std::chrono::seconds seconds(TaskTimeLeft(task_id));
+	if (task->duration == 0 || seconds.count() < 0)
+	{
+		seconds = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::hours(24));
+	}
+
+	dz_request.SetDuration(static_cast<uint32_t>(seconds.count()));
+
+	if (task->type == TaskType::Task || task->type == TaskType::Quest)
+	{
+		if (task->type == TaskType::Task) {
+			dz_request.SetType(DynamicZoneType::Task);
+		} else {
+			dz_request.SetType(DynamicZoneType::Quest);
+		}
+
+		DynamicZoneMember solo_member{ client->CharacterID(), client->GetCleanName() };
+		DynamicZone::CreateNew(dz_request, { solo_member });
+	}
+	else if (task->type == TaskType::Shared)
+	{
+		// shared task missions need to be created in world
+		LogTasksDetail("Sending dynamic zone creation to world for character [{}] task id [{}]", client->CharacterID(), task_id);
+		dz_request.SetType(DynamicZoneType::Mission);
+
+		EQ::Net::DynamicPacket dyn_pack;
+		dyn_pack.PutSerialize(0, dz_request);
+
+		LogDynamicZonesDetail("Serialized server dz size [{}]", dyn_pack.Length());
+
+		auto pack_size = sizeof(ServerSharedTaskCreateDynamicZone_Struct) + dyn_pack.Length();
+		auto pack = std::make_unique<ServerPacket>(ServerOP_SharedTaskCreateDynamicZone, static_cast<uint32_t>(pack_size));
+		auto buf = reinterpret_cast<ServerSharedTaskCreateDynamicZone_Struct*>(pack->pBuffer);
+		buf->source_character_id = client->CharacterID();
+		buf->task_id = task_id;
+		buf->cereal_size = static_cast<uint32_t>(dyn_pack.Length());
+		memcpy(buf->cereal_data, dyn_pack.Data(), dyn_pack.Length());
+
+		worldserver.SendPacket(pack.get());
+	}
 }
