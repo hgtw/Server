@@ -1368,7 +1368,6 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 	case ServerOP_ExpeditionLockoutDuration:
 	case ServerOP_ExpeditionLockState:
 	case ServerOP_ExpeditionReplayOnJoin:
-	case ServerOP_ExpeditionExpireWarning:
 	{
 		zoneserver_list.SendPacket(pack);
 		break;
