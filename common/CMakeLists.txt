@@ -32,7 +32,6 @@ SET(common_sources
 	eq_stream_proxy.cpp
 	eqtime.cpp
 	event_sub.cpp
-	expedition_base.cpp
 	expedition_lockout_timer.cpp
 	extprofile.cpp
 	faction.cpp
@@ -498,7 +497,6 @@ SET(common_headers
 	eqtime.h
 	errmsg.h
 	event_sub.h
-	expedition_base.h
 	expedition_lockout_timer.h
 	extprofile.h
 	faction.h
