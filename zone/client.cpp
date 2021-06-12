@@ -478,6 +478,11 @@ Client::~Client() {
 	safe_delete(eqs);
 
 	UninitializeBuffSlots();
+
+	// shared task
+	m_requesting_shared_task        = false;
+	m_requested_shared_task_removal = false;
+	m_shared_task_update            = false;
 }
 
 void Client::SendZoneInPackets()
@@ -1564,46 +1569,56 @@ void Client::SendSound(){//Makes a sound.
 	safe_delete(outapp);
 
 }
-void Client::UpdateWho(uint8 remove) {
-	if (account_id == 0)
+void Client::UpdateWho(uint8 remove)
+{
+	if (account_id == 0) {
 		return;
-	if (!worldserver.Connected())
+	}
+	if (!worldserver.Connected()) {
 		return;
+	}
+
 	auto pack = new ServerPacket(ServerOP_ClientList, sizeof(ServerClientList_Struct));
-	ServerClientList_Struct* scl = (ServerClientList_Struct*) pack->pBuffer;
-	scl->remove = remove;
-	scl->wid = this->GetWID();
-	scl->IP = this->GetIP();
-	scl->charid = this->CharacterID();
-	strcpy(scl->name, this->GetName());
+	auto *s   = (ServerClientList_Struct *) pack->pBuffer;
+	s->remove = remove;
+	s->wid    = this->GetWID();
+	s->IP     = this->GetIP();
+	s->charid = this->CharacterID();
+	strcpy(s->name, this->GetName());
 
-	scl->gm = GetGM();
-	scl->Admin = this->Admin();
-	scl->AccountID = this->AccountID();
-	strcpy(scl->AccountName, this->AccountName());
-	scl->LSAccountID = this->LSAccountID();
-	strn0cpy(scl->lskey, lskey, sizeof(scl->lskey));
-	scl->zone = zone->GetZoneID();
-	scl->instance_id = zone->GetInstanceID();
-	scl->race = this->GetRace();
-	scl->class_ = GetClass();
-	scl->level = GetLevel();
-	if (m_pp.anon == 0)
-		scl->anon = 0;
-	else if (m_pp.anon == 1)
-		scl->anon = 1;
-	else if (m_pp.anon >= 2)
-		scl->anon = 2;
+	s->gm        = GetGM();
+	s->Admin     = this->Admin();
+	s->AccountID = this->AccountID();
+	strcpy(s->AccountName, this->AccountName());
 
-	scl->ClientVersion = static_cast<unsigned int>(ClientVersion());
-	scl->tellsoff = tellsoff;
-	scl->guild_id = guild_id;
-	scl->LFG = LFG;
-	if(LFG) {
-		scl->LFGFromLevel = LFGFromLevel;
-		scl->LFGToLevel = LFGToLevel;
-		scl->LFGMatchFilter = LFGMatchFilter;
-		memcpy(scl->LFGComments, LFGComments, sizeof(scl->LFGComments));
+	s->LSAccountID = this->LSAccountID();
+	strn0cpy(s->lskey, lskey, sizeof(s->lskey));
+
+	s->zone        = zone->GetZoneID();
+	s->instance_id = zone->GetInstanceID();
+	s->race        = this->GetRace();
+	s->class_      = GetClass();
+	s->level       = GetLevel();
+
+	if (m_pp.anon == 0) {
+		s->anon = 0;
+	}
+	else if (m_pp.anon == 1) {
+		s->anon = 1;
+	}
+	else if (m_pp.anon >= 2) {
+		s->anon = 2;
+	}
+
+	s->ClientVersion = static_cast<unsigned int>(ClientVersion());
+	s->tellsoff      = tellsoff;
+	s->guild_id      = guild_id;
+	s->LFG           = LFG;
+	if (LFG) {
+		s->LFGFromLevel   = LFGFromLevel;
+		s->LFGToLevel     = LFGToLevel;
+		s->LFGMatchFilter = LFGMatchFilter;
+		memcpy(s->LFGComments, LFGComments, sizeof(s->LFGComments));
 	}
 
 	worldserver.SendPacket(pack);
@@ -2415,9 +2430,9 @@ bool Client::CheckIncreaseSkill(EQ::skills::SkillType skillid, Mob *against_who,
 	parse->EventPlayer(EVENT_USE_SKILL, this, buffer, 0);
 	if (against_who) {
 		if (
-			against_who->GetSpecialAbility(IMMUNE_AGGRO) || 
-			against_who->GetSpecialAbility(IMMUNE_AGGRO_CLIENT) || 
-			against_who->IsClient() || 
+			against_who->GetSpecialAbility(IMMUNE_AGGRO) ||
+			against_who->GetSpecialAbility(IMMUNE_AGGRO_CLIENT) ||
+			against_who->IsClient() ||
 			GetLevelCon(against_who->GetLevel()) == CON_GRAY
 		) {
 			//false by default
@@ -9993,7 +10008,7 @@ void Client::MovePCDynamicZone(const std::string& zone_name, int zone_version, b
 	MovePCDynamicZone(zone_id, zone_version, msg_if_invalid);
 }
 
-void Client::Fling(float value, float target_x, float target_y, float target_z, bool ignore_los, bool clipping) {	
+void Client::Fling(float value, float target_x, float target_y, float target_z, bool ignore_los, bool clipping) {
 	BuffFadeByEffect(SE_Levitate);
 	if (CheckLosFN(target_x, target_y, target_z, 6.0f) || ignore_los) {
 		auto outapp_fling = new EQApplicationPacket(OP_Fling, sizeof(fling_struct));
@@ -10002,7 +10017,7 @@ void Client::Fling(float value, float target_x, float target_y, float target_z, 
 			flingTo->collision = 0;
 		else
 			flingTo->collision = -1;
-		
+
 		flingTo->travel_time = -1;
 		flingTo->unk3 = 1;
 		flingTo->disable_fall_damage = 1;
@@ -10057,7 +10072,7 @@ std::vector<int> Client::GetLearnableDisciplines(uint8 min_level, uint8 max_leve
 		if (learnable) {
 			learnable_disciplines.push_back(spell_id);
 		}
-	}		
+	}
 	return learnable_disciplines;
 }
 
@@ -10067,7 +10082,7 @@ std::vector<int> Client::GetLearnedDisciplines() {
 		if (IsValidSpell(m_pp.disciplines.values[index])) {
 			learned_disciplines.push_back(m_pp.disciplines.values[index]);
 		}
-	}		
+	}
 	return learned_disciplines;
 }
 
@@ -10077,7 +10092,7 @@ std::vector<int> Client::GetMemmedSpells() {
 		if (IsValidSpell(m_pp.mem_spells[index])) {
 			memmed_spells.push_back(m_pp.mem_spells[index]);
 		}
-	}		
+	}
 	return memmed_spells;
 }
 
@@ -10123,7 +10138,7 @@ std::vector<int> Client::GetScribeableSpells(uint8 min_level, uint8 max_level) {
 		if (scribeable) {
 			scribeable_spells.push_back(spell_id);
 		}
-	}		
+	}
 	return scribeable_spells;
 }
 

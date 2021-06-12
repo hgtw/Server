@@ -3714,15 +3714,42 @@ struct SetTitleReply_Struct {
 	uint32	entity_id;
 };
 
-struct TaskMemberList_Struct {
-/*00*/ uint32	gopher_id;
-/*04*/ uint32	unknown04;
-/*08*/ uint32	member_count;	//1 less than the number of members
-/*12*/ char	list_pointer[0];
+struct SharedTaskMemberList_Struct {
+/*00*/ uint32 gopher_id;
+/*04*/ uint32 unknown04;
+/*08*/ uint32 member_count;    //1 less than the number of members
+/*12*/ char   list_pointer[0];
+	char      member_name[1];    //null terminated string
+	uint32    monster_mission; // class chosen
+	uint8     task_leader;    //boolean flag
+
 /*	list is of the form:
-	char member_name[1]	//null terminated string
 	uint8	task_leader	//boolean flag
 */
+};
+
+struct SharedTaskQuit_Struct {
+	int32 field1;
+	int32 field2;
+	int32 field3;
+};
+
+struct SharedTaskAddPlayer_Struct {
+	int32 field1;
+	int32 field2;
+	char  player_name[64];
+};
+
+struct SharedTaskMakeLeader_Struct {
+	int32 field1;
+	int32 field2;
+	char  player_name[64];
+};
+
+struct SharedTaskRemovePlayer_Struct {
+	int32 field1;
+	int32 field2;
+	char  player_name[64];
 };
 
 #if 0

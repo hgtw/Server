@@ -54,6 +54,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "zone.h"
 #include "zone_config.h"
 #include "zone_reload.h"
+#include "../common/shared_tasks.h"
+#include "shared_task_zone_messaging.h"
 
 extern EntityList entity_list;
 extern Zone* zone;
@@ -3032,9 +3034,19 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		DynamicZone::HandleWorldMessage(pack);
 		break;
 	}
+	case ServerOP_SharedTaskAcceptNewTask:
+	case ServerOP_SharedTaskUpdate:
+	case ServerOP_SharedTaskAttemptRemove:
+	case ServerOP_SharedTaskMemberlist:
+	{
+		SharedTaskZoneMessaging::HandleWorldMessage(pack);
+		break;
+	}
 	default: {
-		std::cout << " Unknown ZSopcode:" << (int)pack->opcode;
-		std::cout << " size:" << pack->size << std::endl;
+		LogInfo("[HandleMessage] Unknown ZS Opcode [{}] size [{}]", (int)pack->opcode, pack->size);
+
+//		std::cout << " Unknown ZSopcode:" << (int)pack->opcode;
+//		std::cout << " size:" << pack->size << std::endl;
 		break;
 	}
 	}
@@ -3199,13 +3211,16 @@ void WorldServer::HandleReloadTasks(ServerPacket *pack)
 	case RELOADTASKS:
 		entity_list.SaveAllClientsTaskState();
 
+		// TODO: Reload at the world level for shared tasks
+
 		if (rts->Parameter == 0) {
 			Log(Logs::General, Logs::Tasks, "[GLOBALLOAD] Reload ALL tasks");
 			safe_delete(task_manager);
 			task_manager = new TaskManager;
 			task_manager->LoadTasks();
-			if (zone)
+			if (zone) {
 				task_manager->LoadProximities(zone->GetZoneID());
+			}
 			entity_list.ReloadAllClientsTaskState();
 		}
 		else {
@@ -3427,3 +3442,4 @@ void WorldServer::SetScheduler(ZoneEventScheduler *scheduler)
 {
 	WorldServer::m_zone_scheduler = scheduler;
 }
+

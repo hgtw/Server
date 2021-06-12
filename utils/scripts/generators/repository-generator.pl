@@ -278,7 +278,11 @@ foreach my $table_to_generate (@tables) {
         $insert_many_entries .= sprintf("\t\t\tinsert_values.push_back(%s);\n", $value);
 
         # find one / all (select)
-        if ($data_type =~ /int/) {
+        if ($data_type =~ /bigint/) {
+            $all_entries      .= sprintf("\t\t\tentry.%-${longest_column_length}s = strtoll(row[%s], NULL, 10);\n", $column_name, $index);
+            $find_one_entries .= sprintf("\t\t\tentry.%-${longest_column_length}s = strtoll(row[%s], NULL, 10);\n", $column_name, $index);
+        }
+        elsif ($data_type =~ /int/) {
             $all_entries      .= sprintf("\t\t\tentry.%-${longest_column_length}s = atoi(row[%s]);\n", $column_name, $index);
             $find_one_entries .= sprintf("\t\t\tentry.%-${longest_column_length}s = atoi(row[%s]);\n", $column_name, $index);
         }
@@ -468,8 +472,7 @@ sub translate_mysql_data_type_to_c {
         $struct_data_type = 'int';
     }
     elsif ($mysql_data_type =~ /bigint/) {
-        $struct_data_type = 'int';
-        # Use regular int for now until we have 64 support
+        $struct_data_type = 'int64';
     }
     elsif ($mysql_data_type =~ /int/) {
         $struct_data_type = 'int';

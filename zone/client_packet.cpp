@@ -65,6 +65,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "mob_movement_manager.h"
 #include "../common/repositories/character_instance_safereturns_repository.h"
 #include "../common/repositories/criteria/content_filter_criteria.h"
+#include "../common/shared_tasks.h"
 
 #ifdef BOTS
 #include "bot.h"
@@ -414,6 +415,11 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_YellForHelp] = &Client::Handle_OP_YellForHelp;
 	ConnectedOpcodes[OP_ZoneChange] = &Client::Handle_OP_ZoneChange;
 	ConnectedOpcodes[OP_ResetAA] = &Client::Handle_OP_ResetAA;
+
+	// shared tasks
+	ConnectedOpcodes[OP_SharedTaskRemovePlayer] = &Client::Handle_OP_SharedTaskRemovePlayer;
+	ConnectedOpcodes[OP_SharedTaskAddPlayer]    = &Client::Handle_OP_SharedTaskAddPlayer;
+	ConnectedOpcodes[OP_SharedTaskMakeLeader]   = &Client::Handle_OP_SharedTaskMakeLeader;
 }
 
 void ClearMappedOpcode(EmuOpcode op)
@@ -940,6 +946,26 @@ void Client::CompleteConnect()
 		ShowDevToolsMenu();
 	}
 
+	// shared tasks memberlist
+	// TODO: shared_task move this to something else later
+	if (GetTaskState()->HasActiveSharedTask()) {
+
+		// struct
+		auto p = new ServerPacket(
+			ServerOP_SharedTaskRequestMemberlist,
+			sizeof(ServerSharedTaskRequestMemberlist_Struct)
+		);
+
+		auto *r = (ServerSharedTaskRequestMemberlist_Struct *) p->pBuffer;
+
+		// fill
+		r->source_character_id = CharacterID();
+		r->task_id             = GetTaskState()->GetActiveSharedTask().task_id;
+
+		// send
+		worldserver.SendPacket(p);
+		safe_delete(p);
+	}
 }
 
 // connecting opcode handlers
@@ -4517,7 +4543,7 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 			double cosine = std::cos(thetar);
 			double sine = std::sin(thetar);
 
-			double normalizedx, normalizedy;	
+			double normalizedx, normalizedy;
 			normalizedx = cx * cosine - -cy * sine;
 			normalizedy = -cx * sine + cy * cosine;
 
@@ -15232,4 +15258,146 @@ void Client::Handle_OP_ResetAA(const EQApplicationPacket *app)
 		ResetAA();
 	}
 	return;
+}
+
+void Client::Handle_OP_SharedTaskRemovePlayer(const EQApplicationPacket *app)
+{
+	if (app->size != sizeof(SharedTaskRemovePlayer_Struct)) {
+		LogPacketClientServer(
+			"Wrong size on Handle_OP_SharedTaskRemovePlayer | got [{}] expected [{}]",
+			app->size,
+			sizeof(SharedTaskRemovePlayer_Struct)
+		);
+		return;
+	}
+	auto *r = (SharedTaskRemovePlayer_Struct *) app->pBuffer;
+
+	LogTasks(
+		"[Handle_OP_SharedTaskRemovePlayer] field1 [{}] field2 [{}] player_name [{}]",
+		r->field1,
+		r->field2,
+		r->player_name
+	);
+
+	// TODO: Send error message if not in active task
+	if (GetTaskState()->HasActiveSharedTask()) {
+		// struct
+		auto p = new ServerPacket(
+			ServerOP_SharedTaskRemovePlayer,
+			sizeof(ServerSharedTaskRemovePlayer_Struct)
+		);
+
+		auto *rp = (ServerSharedTaskRemovePlayer_Struct *) p->pBuffer;
+
+		// fill
+		rp->source_character_id = CharacterID();
+		rp->task_id             = GetTaskState()->GetActiveSharedTask().task_id;
+		strn0cpy(rp->player_name, r->player_name, sizeof(r->player_name));
+
+		LogTasks(
+			"[Handle_OP_SharedTaskRemovePlayer] source_character_id [{}] task_id [{}] player_name [{}]",
+			rp->source_character_id,
+			rp->task_id,
+			rp->player_name
+		);
+
+		// send
+		worldserver.SendPacket(p);
+		safe_delete(p);
+	}
+}
+
+void Client::Handle_OP_SharedTaskAddPlayer(const EQApplicationPacket *app)
+{
+	if (app->size != sizeof(SharedTaskAddPlayer_Struct)) {
+		LogPacketClientServer(
+			"Wrong size on Handle_OP_SharedTaskAddPlayer | got [{}] expected [{}]",
+			app->size,
+			sizeof(SharedTaskAddPlayer_Struct)
+		);
+		return;
+	}
+	auto *r = (SharedTaskAddPlayer_Struct *) app->pBuffer;
+
+	LogTasks(
+		"[SharedTaskAddPlayer_Struct] field1 [{}] field2 [{}] player_name [{}]",
+		r->field1,
+		r->field2,
+		r->player_name
+	);
+
+	// TODO: Send error message if not in active task
+	if (GetTaskState()->HasActiveSharedTask()) {
+
+		// struct
+		auto p = new ServerPacket(
+			ServerOP_SharedTaskAddPlayer,
+			sizeof(ServerSharedTaskAddPlayer_Struct)
+		);
+
+		auto *rp = (ServerSharedTaskAddPlayer_Struct *) p->pBuffer;
+
+		// fill
+		rp->source_character_id = CharacterID();
+		rp->task_id             = GetTaskState()->GetActiveSharedTask().task_id;
+		strn0cpy(rp->player_name, r->player_name, sizeof(r->player_name));
+
+		LogTasks(
+			"[Handle_OP_SharedTaskRemovePlayer] source_character_id [{}] task_id [{}] player_name [{}]",
+			rp->source_character_id,
+			rp->task_id,
+			rp->player_name
+		);
+
+		// send
+		worldserver.SendPacket(p);
+		safe_delete(p);
+	}
+}
+
+void Client::Handle_OP_SharedTaskMakeLeader(const EQApplicationPacket *app)
+{
+	if (app->size != sizeof(SharedTaskMakeLeader_Struct)) {
+		LogPacketClientServer(
+			"Wrong size on Handle_OP_SharedTaskMakeLeader | got [{}] expected [{}]",
+			app->size,
+			sizeof(SharedTaskMakeLeader_Struct)
+		);
+		return;
+	}
+
+	auto *r = (SharedTaskMakeLeader_Struct *) app->pBuffer;
+	LogTasks(
+		"[SharedTaskMakeLeader_Struct] field1 [{}] field2 [{}] player_name [{}]",
+		r->field1,
+		r->field2,
+		r->player_name
+	);
+
+	// TODO: Send error message if not in active task
+	if (GetTaskState()->HasActiveSharedTask()) {
+		// struct
+		auto p = new ServerPacket(
+			ServerOP_SharedTaskMakeLeader,
+			sizeof(ServerSharedTaskMakeLeader_Struct)
+		);
+
+		auto *rp = (ServerSharedTaskMakeLeader_Struct *) p->pBuffer;
+
+		// fill
+		rp->source_character_id = CharacterID();
+		rp->task_id             = GetTaskState()->GetActiveSharedTask().task_id;
+		strn0cpy(rp->player_name, r->player_name, sizeof(r->player_name));
+
+		LogTasks(
+			"[Handle_OP_SharedTaskRemovePlayer] source_character_id [{}] task_id [{}] player_name [{}]",
+			rp->source_character_id,
+			rp->task_id,
+			rp->player_name
+		);
+
+		// send
+		worldserver.SendPacket(p);
+		safe_delete(p);
+	}
 }

@@ -144,6 +144,7 @@
 #define ServerOP_LFPMatches			0x0214
 #define ServerOP_ClientVersionSummary 0x0215
 
+// expedition
 #define ServerOP_ExpeditionCreate             0x0400
 #define ServerOP_ExpeditionLockout            0x0403
 #define ServerOP_ExpeditionDzAddPlayer        0x0408
@@ -155,6 +156,7 @@
 #define ServerOP_ExpeditionLockState          0x0411
 #define ServerOP_ExpeditionLockoutDuration    0x0414
 
+// dz
 #define ServerOP_DzAddRemoveMember            0x0450
 #define ServerOP_DzRemoveAllMembers           0x0451
 #define ServerOP_DzSetSecondsRemaining        0x0452
@@ -397,7 +399,10 @@ public:
 	}
 
 	void WriteUInt8(uint8 value) { *(uint8 *)(pBuffer + _wpos) = value; _wpos += sizeof(uint8); }
+	void WriteInt8(uint8_t value) { *(uint8_t *)(pBuffer + _wpos) = value; _wpos += sizeof(uint8_t); }
 	void WriteUInt32(uint32 value) { *(uint32 *)(pBuffer + _wpos) = value; _wpos += sizeof(uint32); }
+	void WriteInt32(int32_t value) { *(int32_t *)(pBuffer + _wpos) = value; _wpos += sizeof(int32_t); }
+
 	void WriteString(const char * str) { uint32 len = static_cast<uint32>(strlen(str)) + 1; memcpy(pBuffer + _wpos, str, len); _wpos += len; }
 
 	uint8 ReadUInt8() { uint8 value = *(uint8 *)(pBuffer + _rpos); _rpos += sizeof(uint8); return value; }

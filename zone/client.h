@@ -603,7 +603,7 @@ public:
 	inline double GetEXPModifier(uint32 zone_id) const { return database.GetEXPModifier(CharacterID(), zone_id); };
 	inline void SetAAEXPModifier(uint32 zone_id, double aa_modifier) { database.SetAAEXPModifier(CharacterID(), zone_id, aa_modifier); };
 	inline void SetEXPModifier(uint32 zone_id, double exp_modifier) { database.SetEXPModifier(CharacterID(), zone_id, exp_modifier); };
-	
+
 	bool UpdateLDoNPoints(uint32 theme_id, int points);
 	void SetPVPPoints(uint32 Points) { m_pp.PVPCurrentPoints = Points; }
 	uint32 GetPVPPoints() { return m_pp.PVPCurrentPoints; }
@@ -1266,6 +1266,16 @@ public:
 	{
 		return (task_state ? task_state->CompletedTasksInSet(task_set_id) : 0);
 	}
+
+	// shared tasks
+
+	// shared task shims / middleware
+	// these variables are used as a shim to intercept normal localized task functionality
+	// and pipe it into zone -> world and back to world -> zone
+	// world is authoritative
+	bool m_requesting_shared_task;
+	bool m_shared_task_update;
+	bool m_requested_shared_task_removal;
 
 	inline const EQ::versions::ClientVersion ClientVersion() const { return m_ClientVersion; }
 	inline const uint32 ClientVersionBit() const { return m_ClientVersionBit; }

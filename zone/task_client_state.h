@@ -29,7 +29,7 @@ public:
 	ActivityState GetTaskActivityState(TaskType task_type, int index, int activity_id);
 	void UpdateTaskActivity(Client *client, int task_id, int activity_id, int count, bool ignore_quest_update = false);
 	void ResetTaskActivity(Client *client, int task_id, int activity_id);
-	void CancelTask(Client *client, int sequence_number, TaskType task_type, bool remove_from_db = true);
+	void CancelTask(Client *c, int sequence_number, TaskType task_type, bool remove_from_db = true);
 	void CancelAllTasks(Client *client);
 	void RemoveTask(Client *client, int sequence_number, TaskType task_type);
 	void RemoveTaskByTaskID(Client *client, uint32 task_id);
@@ -59,8 +59,21 @@ public:
 
 	friend class TaskManager;
 
+	// wrapper to call internal IncrementDoneCount
+	void SharedTaskIncrementDoneCount(
+		Client *client,
+		int task_id,
+		int activity_id,
+		int done_count,
+		bool ignore_quest_update = false
+	);
+
+	const ClientTaskInformation &GetActiveSharedTask() const;
+	bool HasActiveSharedTask();
+
+
 private:
-	bool UnlockActivities(int character_id, ClientTaskInformation &task_info);
+
 	void IncrementDoneCount(
 		Client *client,
 		TaskInformation *task_information,
@@ -70,16 +83,21 @@ private:
 		bool ignore_quest_update = false
 	);
 
+	bool UnlockActivities(int character_id, ClientTaskInformation &task_info);
+
 	inline ClientTaskInformation *GetClientTaskInfo(TaskType task_type, int index)
 	{
 		ClientTaskInformation *info = nullptr;
 		switch (task_type) {
 			case TaskType::Task:
-				if (index == 0) {
+				if (index == TASKSLOTTASK) {
 					info = &m_active_task;
 				}
 				break;
 			case TaskType::Shared:
+				if (index == TASKSLOTSHAREDTASK) {
+					info = &m_active_shared_task;
+				}
 				break;
 			case TaskType::Quest:
 				if (index < MAXACTIVEQUESTS) {
@@ -95,9 +113,13 @@ private:
 	union { // easier to loop over
 		struct {
 			ClientTaskInformation m_active_task; // only one
+
+			// acts as a read-only "view" of data that is managed by world and the internal task
+			// system largely behaves like other tasks but shims logic to world where necessary
+			ClientTaskInformation m_active_shared_task; // only one
 			ClientTaskInformation m_active_quests[MAXACTIVEQUESTS];
 		};
-		ClientTaskInformation m_active_tasks[MAXACTIVEQUESTS + 1];
+		ClientTaskInformation m_active_tasks[MAXACTIVEQUESTS + 2];
 	};
 	// Shared tasks should be limited to 1 as well
 	int                                   m_active_task_count;
@@ -105,6 +127,8 @@ private:
 	std::vector<CompletedTaskInformation> m_completed_tasks;
 	int                                   m_last_completed_task_loaded;
 	bool                                  m_checked_touch_activities;
+
+	static void ShowClientTaskInfoMessage(ClientTaskInformation *task, Client *c);
 };
 
 
