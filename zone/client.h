@@ -1024,6 +1024,9 @@ public:
 	bool CheckTitle(int titleset);
 	void EnableTitle(int titleset);
 	void RemoveTitle(int titleset);
+	void LoadCharacterTitleIDs();
+	void AddCharacterTitleID(uint32_t title_id);
+	bool HasTitleID(int title_id) const { return std::find(m_title_ids.begin(), m_title_ids.end(), title_id) != m_title_ids.end(); }
 
 	void EnteringMessages(Client* client);
 	void SendRules(Client* client);
@@ -1988,6 +1991,8 @@ private:
 	glm::vec3 m_quest_compass;
 	bool m_has_quest_compass = false;
 	std::vector<uint32_t> m_dynamic_zone_ids;
+
+	std::vector<uint32_t> m_title_ids;
 
 #ifdef BOTS
 

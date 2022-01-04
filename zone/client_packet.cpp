@@ -1246,6 +1246,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	database.LoadCharacterLanguages(cid, &m_pp); /* Load Character Languages */
 	database.LoadCharacterLeadershipAA(cid, &m_pp); /* Load Character Leadership AA's */
 	database.LoadCharacterTribute(cid, &m_pp); /* Load CharacterTribute */
+	LoadCharacterTitleIDs();
 
 	/* Load AdventureStats */
 	AdventureStats_Struct as;
@@ -12532,7 +12533,7 @@ void Client::Handle_OP_RequestDuel(const EQApplicationPacket *app)
 void Client::Handle_OP_RequestTitles(const EQApplicationPacket *app)
 {
 
-	EQApplicationPacket *outapp = title_manager.MakeTitlesPacket(this);
+	EQApplicationPacket *outapp = title_manager.MakeTitlesPacket(*this);
 
 	if (outapp != nullptr)
 		FastQueuePacket(&outapp);
@@ -12890,19 +12891,16 @@ void Client::Handle_OP_SetTitle(const EQApplicationPacket *app)
 		return;
 	}
 
-	SetTitle_Struct *sts = (SetTitle_Struct *)app->pBuffer;
+	auto sts = reinterpret_cast<SetTitle_Struct*>(app->pBuffer);
 
-	std::string Title;
-
-	if (!sts->is_suffix)
+	auto title = title_manager.GetTitle(sts->title_id);
+	if (title && title_manager.IsClientEligibleForTitle(*this, *title))
 	{
-		Title = title_manager.GetPrefix(sts->title_id);
-		SetAATitle(Title.c_str());
-	}
-	else
-	{
-		Title = title_manager.GetSuffix(sts->title_id);
-		SetTitleSuffix(Title.c_str());
+		if (!sts->is_suffix) {
+			SetAATitle(title->prefix.c_str());
+		} else {
+			SetTitleSuffix(title->suffix.c_str());
+		}
 	}
 }
 

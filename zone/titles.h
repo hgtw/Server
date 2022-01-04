@@ -18,48 +18,32 @@
 #ifndef TITLES_H
 #define TITLES_H
 
+#include "../common/repositories/titles_repository.h"
 #include <vector>
 
 class Client;
 class EQApplicationPacket;
 
-struct TitleEntry
-{
-	int TitleID;
-	int SkillID;
-	int MinSkillValue;
-	int MaxSkillValue;
-	int MinAAPoints;
-	int MaxAAPoints;
-	int Class;
-	int Gender;
-	int CharID;
-	int Status;
-	int ItemID;
-	std::string Prefix;
-	std::string Suffix;
-	int TitleSet;
-};
-
 class TitleManager
 {
 public:
-	TitleManager();
+	TitleManager() = default;
 
 	bool LoadTitles();
 
-	EQApplicationPacket *MakeTitlesPacket(Client *c);
-	std::string GetPrefix(int TitleID);
-	std::string GetSuffix(int TitleID);
-	int NumberOfAvailableTitles(Client *c);
-	bool IsClientEligibleForTitle(Client *c, std::vector<TitleEntry>::iterator Title);
-	bool IsNewAATitleAvailable(int AAPoints, int Class);
-	bool IsNewTradeSkillTitleAvailable(int SkillID, int SkillValue);
-	void CreateNewPlayerTitle(Client *c, const char *Title);
-	void CreateNewPlayerSuffix(Client *c, const char *Suffix);
+	EQApplicationPacket *MakeTitlesPacket(Client& c);
+	const TitlesRepository::Titles* GetTitle(int title_id) const;
+	bool IsClientEligibleForTitle(Client& client, const TitlesRepository::Titles& title);
+	bool IsNewAATitleAvailable(int aa_points, int client_class);
+	bool IsNewTradeSkillTitleAvailable(int skill_id, int skill_value);
+	void CreateNewPlayerTitle(Client *c, fmt::string_view prefix);
+	void CreateNewPlayerSuffix(Client *c, fmt::string_view suffix);
 
 protected:
-	std::vector<TitleEntry> Titles;
+	void CreateCharacterTitle(Client& client, fmt::string_view title_str, bool is_suffix);
+	bool IsTitleRestricted(const TitlesRepository::Titles& title);
+
+	std::vector<TitlesRepository::Titles> m_titles;
 };
 
 extern TitleManager title_manager;
