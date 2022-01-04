@@ -14,6 +14,7 @@
 
 #include "../../database.h"
 #include "../../string_util.h"
+#include <ctime>
 
 class BaseTitlesRepository {
 public:
@@ -26,7 +27,6 @@ public:
 		int         max_aa_points;
 		int         class_;
 		int         gender;
-		int         char_id;
 		int         status;
 		int         item_id;
 		std::string prefix;
@@ -50,7 +50,25 @@ public:
 			"max_aa_points",
 			"`class`",
 			"gender",
-			"char_id",
+			"status",
+			"item_id",
+			"prefix",
+			"suffix",
+			"title_set",
+		};
+	}
+
+	static std::vector<std::string> SelectColumns()
+	{
+		return {
+			"id",
+			"skill_id",
+			"min_skill_value",
+			"max_skill_value",
+			"min_aa_points",
+			"max_aa_points",
+			"`class`",
+			"gender",
 			"status",
 			"item_id",
 			"prefix",
@@ -64,6 +82,11 @@ public:
 		return std::string(implode(", ", Columns()));
 	}
 
+	static std::string SelectColumnsRaw()
+	{
+		return std::string(implode(", ", SelectColumns()));
+	}
+
 	static std::string TableName()
 	{
 		return std::string("titles");
@@ -73,7 +96,7 @@ public:
 	{
 		return fmt::format(
 			"SELECT {} FROM {}",
-			ColumnsRaw(),
+			SelectColumnsRaw(),
 			TableName()
 		);
 	}
@@ -99,7 +122,6 @@ public:
 		entry.max_aa_points   = -1;
 		entry.class_          = -1;
 		entry.gender          = -1;
-		entry.char_id         = -1;
 		entry.status          = -1;
 		entry.item_id         = -1;
 		entry.prefix          = "";
@@ -148,12 +170,11 @@ public:
 			entry.max_aa_points   = atoi(row[5]);
 			entry.class_          = atoi(row[6]);
 			entry.gender          = atoi(row[7]);
-			entry.char_id         = atoi(row[8]);
-			entry.status          = atoi(row[9]);
-			entry.item_id         = atoi(row[10]);
-			entry.prefix          = row[11] ? row[11] : "";
-			entry.suffix          = row[12] ? row[12] : "";
-			entry.title_set       = atoi(row[13]);
+			entry.status          = atoi(row[8]);
+			entry.item_id         = atoi(row[9]);
+			entry.prefix          = row[10] ? row[10] : "";
+			entry.suffix          = row[11] ? row[11] : "";
+			entry.title_set       = atoi(row[12]);
 
 			return entry;
 		}
@@ -194,12 +215,11 @@ public:
 		update_values.push_back(columns[5] + " = " + std::to_string(titles_entry.max_aa_points));
 		update_values.push_back(columns[6] + " = " + std::to_string(titles_entry.class_));
 		update_values.push_back(columns[7] + " = " + std::to_string(titles_entry.gender));
-		update_values.push_back(columns[8] + " = " + std::to_string(titles_entry.char_id));
-		update_values.push_back(columns[9] + " = " + std::to_string(titles_entry.status));
-		update_values.push_back(columns[10] + " = " + std::to_string(titles_entry.item_id));
-		update_values.push_back(columns[11] + " = '" + EscapeString(titles_entry.prefix) + "'");
-		update_values.push_back(columns[12] + " = '" + EscapeString(titles_entry.suffix) + "'");
-		update_values.push_back(columns[13] + " = " + std::to_string(titles_entry.title_set));
+		update_values.push_back(columns[8] + " = " + std::to_string(titles_entry.status));
+		update_values.push_back(columns[9] + " = " + std::to_string(titles_entry.item_id));
+		update_values.push_back(columns[10] + " = '" + EscapeString(titles_entry.prefix) + "'");
+		update_values.push_back(columns[11] + " = '" + EscapeString(titles_entry.suffix) + "'");
+		update_values.push_back(columns[12] + " = " + std::to_string(titles_entry.title_set));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -229,7 +249,6 @@ public:
 		insert_values.push_back(std::to_string(titles_entry.max_aa_points));
 		insert_values.push_back(std::to_string(titles_entry.class_));
 		insert_values.push_back(std::to_string(titles_entry.gender));
-		insert_values.push_back(std::to_string(titles_entry.char_id));
 		insert_values.push_back(std::to_string(titles_entry.status));
 		insert_values.push_back(std::to_string(titles_entry.item_id));
 		insert_values.push_back("'" + EscapeString(titles_entry.prefix) + "'");
@@ -272,7 +291,6 @@ public:
 			insert_values.push_back(std::to_string(titles_entry.max_aa_points));
 			insert_values.push_back(std::to_string(titles_entry.class_));
 			insert_values.push_back(std::to_string(titles_entry.gender));
-			insert_values.push_back(std::to_string(titles_entry.char_id));
 			insert_values.push_back(std::to_string(titles_entry.status));
 			insert_values.push_back(std::to_string(titles_entry.item_id));
 			insert_values.push_back("'" + EscapeString(titles_entry.prefix) + "'");
@@ -319,12 +337,11 @@ public:
 			entry.max_aa_points   = atoi(row[5]);
 			entry.class_          = atoi(row[6]);
 			entry.gender          = atoi(row[7]);
-			entry.char_id         = atoi(row[8]);
-			entry.status          = atoi(row[9]);
-			entry.item_id         = atoi(row[10]);
-			entry.prefix          = row[11] ? row[11] : "";
-			entry.suffix          = row[12] ? row[12] : "";
-			entry.title_set       = atoi(row[13]);
+			entry.status          = atoi(row[8]);
+			entry.item_id         = atoi(row[9]);
+			entry.prefix          = row[10] ? row[10] : "";
+			entry.suffix          = row[11] ? row[11] : "";
+			entry.title_set       = atoi(row[12]);
 
 			all_entries.push_back(entry);
 		}
@@ -357,12 +374,11 @@ public:
 			entry.max_aa_points   = atoi(row[5]);
 			entry.class_          = atoi(row[6]);
 			entry.gender          = atoi(row[7]);
-			entry.char_id         = atoi(row[8]);
-			entry.status          = atoi(row[9]);
-			entry.item_id         = atoi(row[10]);
-			entry.prefix          = row[11] ? row[11] : "";
-			entry.suffix          = row[12] ? row[12] : "";
-			entry.title_set       = atoi(row[13]);
+			entry.status          = atoi(row[8]);
+			entry.item_id         = atoi(row[9]);
+			entry.prefix          = row[10] ? row[10] : "";
+			entry.suffix          = row[11] ? row[11] : "";
+			entry.title_set       = atoi(row[12]);
 
 			all_entries.push_back(entry);
 		}
