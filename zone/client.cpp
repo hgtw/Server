@@ -9746,11 +9746,11 @@ void Client::RemoveAllExpeditionLockouts(const std::string& expedition_name, boo
 }
 
 const ExpeditionLockoutTimer* Client::GetExpeditionLockout(
-	const std::string& expedition_name, const std::string& event_name, bool include_expired) const
+	const std::string& expedition_name, const std::string& event_name) const
 {
 	for (const auto& expedition_lockout : m_expedition_lockouts)
 	{
-		if ((include_expired || !expedition_lockout.IsExpired()) &&
+		if (!expedition_lockout.IsExpired() &&
 		    expedition_lockout.IsSameLockout(expedition_name, event_name))
 		{
 			return &expedition_lockout;
@@ -9759,14 +9759,12 @@ const ExpeditionLockoutTimer* Client::GetExpeditionLockout(
 	return nullptr;
 }
 
-std::vector<ExpeditionLockoutTimer> Client::GetExpeditionLockouts(
-	const std::string& expedition_name, bool include_expired)
+std::vector<ExpeditionLockoutTimer> Client::GetExpeditionLockouts()
 {
 	std::vector<ExpeditionLockoutTimer> lockouts;
 	for (const auto& lockout : m_expedition_lockouts)
 	{
-		if ((include_expired || !lockout.IsExpired()) &&
-		    lockout.GetExpeditionName() == expedition_name)
+		if (!lockout.IsExpired())
 		{
 			lockouts.emplace_back(lockout);
 		}
@@ -9774,10 +9772,22 @@ std::vector<ExpeditionLockoutTimer> Client::GetExpeditionLockouts(
 	return lockouts;
 }
 
-bool Client::HasExpeditionLockout(
-	const std::string& expedition_name, const std::string& event_name, bool include_expired)
+std::vector<ExpeditionLockoutTimer> Client::GetExpeditionLockouts(const std::string& expedition_name)
 {
-	return (GetExpeditionLockout(expedition_name, event_name, include_expired) != nullptr);
+	std::vector<ExpeditionLockoutTimer> lockouts;
+	for (const auto& lockout : m_expedition_lockouts)
+	{
+		if (!lockout.IsExpired() && lockout.GetExpeditionName() == expedition_name)
+		{
+			lockouts.emplace_back(lockout);
+		}
+	}
+	return lockouts;
+}
+
+bool Client::HasExpeditionLockout(const std::string& expedition_name, const std::string& event_name)
+{
+	return (GetExpeditionLockout(expedition_name, event_name) != nullptr);
 }
 
 void Client::SendExpeditionLockoutTimers()
