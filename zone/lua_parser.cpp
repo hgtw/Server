@@ -176,6 +176,7 @@ LuaParser::LuaParser() {
 	NPCArgumentDispatch[EVENT_ENTER] = handle_npc_single_client;
 	NPCArgumentDispatch[EVENT_EXIT] = handle_npc_single_client;
 	NPCArgumentDispatch[EVENT_TASK_ACCEPTED] = handle_npc_task_accepted;
+	NPCArgumentDispatch[EVENT_TASK_UPDATE] = handle_npc_task_update;
 	NPCArgumentDispatch[EVENT_POPUP_RESPONSE] = handle_npc_popup;
 	NPCArgumentDispatch[EVENT_WAYPOINT_ARRIVE] = handle_npc_waypoint;
 	NPCArgumentDispatch[EVENT_WAYPOINT_DEPART] = handle_npc_waypoint;

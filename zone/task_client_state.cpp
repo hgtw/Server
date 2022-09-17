@@ -593,6 +593,12 @@ int ClientTaskState::UpdateTasks(Client* client, const TaskUpdateFilter& filter,
 				int updated = IncrementDoneCount(client, task, client_task.slot, client_activity.activity_id, count);
 				max_updated = std::max(max_updated, updated);
 
+				if (filter.npc && parse->HasQuestSub(filter.npc->GetNPCTypeID(), EVENT_TASK_UPDATE))
+				{
+					auto args = fmt::format("{}, {}, {}", updated, client_activity.activity_id, client_task.task_id);
+					parse->EventNPC(EVENT_TASK_UPDATE, filter.npc, client, args, 0);
+				}
+
 				if (RuleB(TaskSystem, UpdateOneElementPerTask))
 				{
 					break; // only one element updated per task, move to next task

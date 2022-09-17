@@ -134,6 +134,24 @@ void handle_npc_task_accepted(QuestInterface *parse, lua_State* L, NPC* npc, Mob
 	lua_setfield(L, -2, "task_id");
 }
 
+void handle_npc_task_update(QuestInterface *parse, lua_State* L, NPC* npc, Mob *init, std::string data, uint32 extra_data,
+						  std::vector<std::any> *extra_pointers) {
+	Lua_Client l_client(reinterpret_cast<Client*>(init));
+	luabind::adl::object l_client_o = luabind::adl::object(L, l_client);
+	l_client_o.push(L);
+	lua_setfield(L, -2, "other");
+
+	Seperator sep(data.c_str());
+	lua_pushinteger(L, std::stoi(sep.arg[0]));
+	lua_setfield(L, -2, "count");
+
+	lua_pushinteger(L, std::stoi(sep.arg[1]));
+	lua_setfield(L, -2, "activity_id");
+
+	lua_pushinteger(L, std::stoi(sep.arg[2]));
+	lua_setfield(L, -2, "task_id");
+}
+
 void handle_npc_popup(QuestInterface *parse, lua_State* L, NPC* npc, Mob *init, std::string data, uint32 extra_data,
 						  std::vector<std::any> *extra_pointers) {
 	Lua_Mob l_mob(init);
